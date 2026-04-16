@@ -1,36 +1,101 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Road Rescue
 
-## Getting Started
+Production-ready roadside assistance web app. Drivers request help, mechanics accept jobs, admins monitor everything — all in real time.
 
-First, run the development server:
+## Tech Stack
+
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Styling | Tailwind CSS v4 |
+| Database | Vercel Postgres / Supabase (PostgreSQL) |
+| ORM | Prisma |
+| Auth | NextAuth.js v5 (Google OAuth + Email/Password) |
+| Real-time | Pusher |
+| Maps | React-Leaflet + OpenStreetMap (no API key needed) |
+| Icons | Lucide React |
+
+## Features
+
+- **Driver Flow** — One-tap geolocation, issue form, live status tracking, cancel
+- **Mechanic Flow** — Live jobs feed, accept mission, on-the-way, complete
+- **Admin Flow** — Live operations map, all requests table, user management
+- **Real-time** — Pusher broadcasts all status changes instantly
+- **Mobile-first** — 44px+ touch targets, high-contrast dark UI
+
+## Local Development
+
+### 1. Install
+
+```bash
+npm install
+```
+
+### 2. Environment variables
+
+```bash
+cp .env.example .env.local
+# Fill in all values
+```
+
+### 3. Database
+
+```bash
+npx prisma db push
+npx prisma generate
+```
+
+### 4. Dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Deploy to Vercel
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Push to GitHub, import at vercel.com/new
+2. Add all env vars from `.env.example`
+3. `vercel.json` runs `prisma generate` automatically on build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Required environment variables
 
-## Learn More
+| Variable | Source |
+|---|---|
+| `DATABASE_URL` | Vercel Postgres or Supabase |
+| `NEXTAUTH_SECRET` | `openssl rand -base64 32` |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google Cloud Console |
+| `PUSHER_APP_ID`, `PUSHER_SECRET`, `NEXT_PUBLIC_PUSHER_KEY`, `NEXT_PUBLIC_PUSHER_CLUSTER` | pusher.com (free Sandbox tier) |
 
-To learn more about Next.js, take a look at the following resources:
+## Roles
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Role | Dashboard | Access |
+|---|---|---|
+| `DRIVER` | `/dashboard/driver` | Submit & track own requests |
+| `MECHANIC` | `/dashboard/mechanic` | View jobs, accept, complete |
+| `ADMIN` | `/dashboard/admin` | All data, live map, user table |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+To promote a user to admin:
+```sql
+UPDATE "User" SET role = 'ADMIN' WHERE email = 'admin@example.com';
+```
 
-## Deploy on Vercel
+## Structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+  app/
+    (auth)/login|register/
+    api/auth/[...nextauth]/  — NextAuth
+    api/auth/register/       — Registration
+    api/requests/[id]/       — Request CRUD
+    api/users/               — Admin user list
+    api/pusher/auth/         — Pusher channel auth
+    dashboard/
+      layout.tsx             — Nav + session guard
+      driver|mechanic|admin/ — Role dashboards
+  components/map/            — Leaflet maps
+  lib/auth|prisma|pusher.ts
+  middleware.ts              — Route protection
+prisma/schema.prisma
+```
+# roadrescue
