@@ -95,7 +95,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       if (session.user) {
         session.user.id = (token.id as string) ?? "";
-        // Guard: ensure role is always one of our valid values
         const rawRole = token.role as string;
         session.user.role = VALID_ROLES.includes(rawRole as Role)
           ? (rawRole as Role)

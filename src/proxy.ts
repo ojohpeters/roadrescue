@@ -12,7 +12,14 @@ const ROLE_PATHS: Record<Role, string> = {
 
 function roleToPath(role: string | undefined): string {
   if (role && role in ROLE_PATHS) return ROLE_PATHS[role as Role];
-  return "/dashboard/driver"; // safe fallback
+  return "/dashboard/driver";
+}
+
+function isPremiumMechanic(role: string | undefined, pathname: string): boolean {
+  if (pathname.startsWith("/dashboard/premium-mechanic")) {
+    return role === "MECHANIC" || role === "ADMIN";
+  }
+  return true;
 }
 
 export async function proxy(req: NextRequest) {
@@ -39,6 +46,13 @@ export async function proxy(req: NextRequest) {
     }
     if (
       pathname.startsWith("/dashboard/mechanic") &&
+      role !== "MECHANIC" &&
+      role !== "ADMIN"
+    ) {
+      return NextResponse.redirect(new URL(roleToPath(role), req.url));
+    }
+    if (
+      pathname.startsWith("/dashboard/premium-mechanic") &&
       role !== "MECHANIC" &&
       role !== "ADMIN"
     ) {

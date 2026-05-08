@@ -33,6 +33,33 @@ export interface RequestWithUsers {
   } | null;
 }
 
+export interface PublicMechanic {
+  id: string;
+  name: string | null;
+  phone: string | null;
+  email: string;
+  latitude?: number;
+  longitude?: number;
+  address?: string | null;
+  isPremium: boolean;
+  serviceRadius?: number;
+  responseTime?: number | null;
+}
+
+export interface PremiumMechanicProfile {
+  id: string;
+  name: string | null;
+  email: string;
+  phone: string | null;
+  image?: string | null;
+  isAvailable: boolean;
+  serviceRadius: number;
+  responseTime: number;
+  latitude?: number;
+  longitude?: number;
+  address?: string | null;
+}
+
 export const ISSUE_TYPES = [
   { value: "flat_tyre", label: "Flat Tyre" },
   { value: "engine_trouble", label: "Engine Trouble" },

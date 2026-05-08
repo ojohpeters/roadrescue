@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import PWARegister from "@/components/PWARegister";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,6 +18,8 @@ export const metadata: Metadata = {
   description:
     "Get help fast when your vehicle breaks down. Connect with nearby mechanics in minutes.",
   icons: { icon: "/favicon.ico" },
+  manifest: "/manifest.json",
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Road Rescue" },
 };
 
 export const viewport: Viewport = {
@@ -36,6 +39,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-[#0a0a0f] text-white">
         {children}
+        <PWARegister />
       </body>
     </html>
   );

@@ -14,6 +14,12 @@ export interface IUser extends Document {
   role: Role;
   phone?: string;
   isAvailable: boolean;
+  isPremium: boolean;
+  serviceRadius: number;
+  responseTime: number;
+  latitude?: number;
+  longitude?: number;
+  address?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,6 +34,12 @@ const UserSchema = new Schema<IUser>(
     role: { type: String, enum: ["DRIVER", "MECHANIC", "ADMIN"], default: "DRIVER" },
     phone: { type: String },
     isAvailable: { type: Boolean, default: true },
+    isPremium: { type: Boolean, default: false },
+    serviceRadius: { type: Number, default: 10 },
+    responseTime: { type: Number, default: 30 },
+    latitude: { type: Number },
+    longitude: { type: Number },
+    address: { type: String },
   },
   { timestamps: true }
 );

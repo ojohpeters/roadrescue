@@ -21,6 +21,7 @@ export default async function DashboardLayout({
     ],
     MECHANIC: [
       { href: "/dashboard/mechanic", label: "Jobs", icon: Wrench },
+      { href: "/dashboard/premium-mechanic", label: "Premium", icon: Shield },
     ],
     ADMIN: [
       { href: "/dashboard/admin", label: "Overview", icon: LayoutDashboard },
