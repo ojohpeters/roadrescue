@@ -4,6 +4,7 @@ import Link from "next/link";
 import { signOut } from "@/lib/auth";
 import { Wrench, Car, Shield, LogOut, LayoutDashboard } from "lucide-react";
 import SessionProvider from "@/components/ui/SessionProvider";
+import CacheWarmer from "@/components/CacheWarmer";
 
 export default async function DashboardLayout({
   children,
@@ -33,6 +34,7 @@ export default async function DashboardLayout({
 
   return (
     <SessionProvider>
+      <CacheWarmer />
       <div className="min-h-screen bg-[#0a0a0f] flex flex-col">
         {/* Top nav */}
         <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 glass border-b border-white/5">

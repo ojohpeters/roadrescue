@@ -30,6 +30,7 @@ export interface RequestWithUsers {
     email: string;
     phone?: string | null;
     image?: string | null;
+    isPremium?: boolean;
   } | null;
 }
 

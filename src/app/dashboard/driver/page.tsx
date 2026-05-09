@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { MapPin, Loader2, AlertCircle, CheckCircle2, Car, ChevronRight, X } from "lucide-react";
+import { MapPin, Loader2, AlertCircle, CheckCircle2, Car, ChevronRight, X, Shield } from "lucide-react";
 import dynamic from "next/dynamic";
 import type { RequestWithUsers } from "@/types";
 import { ISSUE_TYPES, STATUS_LABELS, STATUS_COLORS } from "@/types";
@@ -55,21 +55,30 @@ export default function DriverDashboard() {
   const detectLocation = useCallback(() => {
     if (!navigator.geolocation) { setGeoState("error"); return; }
     setGeoState("detecting");
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setLat(latitude); setLng(longitude); setGeoState("found");
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
-          );
-          const data = await res.json();
-          setAddress(data.display_name ?? "");
-        } catch { /* ignore */ }
-      },
-      () => setGeoState("error"),
-      { timeout: 30000, enableHighAccuracy: true }
-    );
+
+    function onSuccess(pos: GeolocationPosition) {
+      const { latitude, longitude } = pos.coords;
+      setLat(latitude); setLng(longitude); setGeoState("found");
+      fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+      )
+        .then((r) => r.json())
+        .then((d) => setAddress(d.display_name ?? ""))
+        .catch(() => {});
+    }
+
+    function onError() {
+      // Fallback: high accuracy may fail indoors/slow GPS, retry without it
+      navigator.geolocation.getCurrentPosition(onSuccess, () => setGeoState("error"), {
+        timeout: 15000,
+        enableHighAccuracy: false,
+      });
+    }
+
+    navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+      timeout: 10000,
+      enableHighAccuracy: true,
+    });
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -157,7 +166,7 @@ export default function DriverDashboard() {
               )}
               <DriverMap
                 latitude={lat} longitude={lng}
-                onLocationSelect={(la, lo) => { setLat(la); setLng(lo); if (geoState === "idle") setGeoState("found"); }}
+                onLocationSelect={(la, lo) => { setLat(la); setLng(lo); setGeoState("found"); }}
               />
             </div>
 
@@ -237,14 +246,21 @@ export default function DriverDashboard() {
             </div>
 
             {activeRequest.mechanic && (
-              <div className="glass rounded-2xl p-5 border border-white/8">
+                    <div className="glass rounded-2xl p-5 border border-white/8">
                 <p className="text-xs text-white/40 mb-3">Your Mechanic</p>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
                     <span className="text-blue-400 font-bold text-sm">{(activeRequest.mechanic.name ?? "M")[0].toUpperCase()}</span>
                   </div>
-                  <div>
-                    <p className="font-medium">{activeRequest.mechanic.name ?? "Mechanic"}</p>
+                  <div className="flex-1">
+                    <p className="font-medium flex items-center gap-2">
+                      {activeRequest.mechanic.name ?? "Mechanic"}
+                      {activeRequest.mechanic.isPremium && (
+                        <span className="inline-flex items-center gap-1 text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                          <Shield className="w-3 h-3" /> Premium
+                        </span>
+                      )}
+                    </p>
                     {activeRequest.mechanic.phone && (
                       <a href={`tel:${activeRequest.mechanic.phone}`} className="text-sm text-orange-400 hover:underline">{activeRequest.mechanic.phone}</a>
                     )}

@@ -41,6 +41,7 @@ function normalizeDoc(r: any) {
           email: mechanic.email ?? "",
           phone: mechanic.phone ?? null,
           image: mechanic.image ?? null,
+          isPremium: mechanic.isPremium ?? false,
         }
       : null,
   };
