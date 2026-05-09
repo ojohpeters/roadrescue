@@ -74,21 +74,34 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return true;
     },
 
-    async jwt({ token, user }) {
-      // `user` is only defined on the FIRST sign-in for this session.
-      // Instead of relying on `user` having a custom `role` property (which
-      // NextAuth v5 beta may strip), always look up the role from MongoDB.
-      if (user) {
-        await connectDB();
-        const dbUser = await User.findOne({ email: token.email }).select("_id role").lean();
-        if (dbUser) {
-          token.id = String(dbUser._id);
-          token.role = VALID_ROLES.includes(dbUser.role as Role) ? dbUser.role : "DRIVER";
-        } else {
-          token.id = user.id;
-          token.role = "DRIVER";
+    async jwt({ token, user, account }) {
+      const ONE_HOUR = 3600000;
+      const lastCheck = (token.lastRoleCheck as number) ?? 0;
+      const needsDbLookup = !!user || !token.role || (Date.now() - lastCheck > ONE_HOUR);
+
+      // Google OAuth users always need a DB lookup (created with default DRIVER role)
+      const isGoogleOAuth = account?.provider === "google" && !!user;
+
+      if (needsDbLookup || isGoogleOAuth) {
+        try {
+          await connectDB();
+          const dbUser = await User.findOne({ email: token.email }).select("_id role").lean();
+          if (dbUser) {
+            token.id = String(dbUser._id);
+            token.role = VALID_ROLES.includes(dbUser.role as Role) ? dbUser.role : "DRIVER";
+          } else if (user) {
+            token.id = user.id;
+            token.role = "DRIVER";
+          }
+          token.lastRoleCheck = Date.now();
+        } catch {
+          if (user) {
+            token.id = user.id;
+          }
+          if (!token.role) token.role = "DRIVER";
         }
       }
+
       return token;
     },
 
