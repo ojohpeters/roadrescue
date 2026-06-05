@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { Wrench, MapPin, Clock, CheckCircle2, Loader2, Navigation } from "lucide-react";
+import { Wrench, MapPin, Clock, CheckCircle2, Loader2, Navigation, Shield, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import type { RequestWithUsers } from "@/types";
 import { ISSUE_TYPES, STATUS_LABELS, STATUS_COLORS } from "@/types";
@@ -98,6 +99,21 @@ export default function MechanicDashboard() {
             {activeJob ? "You have an active job" : `${pendingJobs.length} job${pendingJobs.length !== 1 ? "s" : ""} available nearby`}
           </p>
         </div>
+
+        {/* Premium upgrade entry point */}
+        <Link
+          href="/dashboard/premium-mechanic"
+          className="flex items-center gap-3 glass rounded-2xl p-4 border border-amber-500/20 hover:border-amber-500/40 transition-colors mb-6"
+        >
+          <div className="w-10 h-10 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
+            <Shield className="w-4 h-4 text-amber-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium">Become a Premium Mechanic</p>
+            <p className="text-xs text-white/50">Get listed in the public directory so drivers can call you directly</p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-white/30" />
+        </Link>
 
         {/* Tab bar */}
         <div className="flex gap-1 p-1 rounded-xl bg-white/5 border border-white/8 mb-6">

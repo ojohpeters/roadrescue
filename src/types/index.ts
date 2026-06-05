@@ -45,6 +45,7 @@ export interface PublicMechanic {
   longitude?: number;
   address?: string | null;
   isPremium: boolean;
+  isAvailable?: boolean;
   serviceRadius?: number;
   responseTime?: number | null;
 }

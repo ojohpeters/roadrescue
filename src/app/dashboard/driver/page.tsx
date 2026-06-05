@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { MapPin, Loader2, AlertCircle, CheckCircle2, Car, ChevronRight, X, Shield, Search } from "lucide-react";
+import { MapPin, Loader2, AlertCircle, CheckCircle2, Car, ChevronRight, X, Shield, Search, Phone } from "lucide-react";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import type { RequestWithUsers } from "@/types";
 import { ISSUE_TYPES, STATUS_LABELS, STATUS_COLORS } from "@/types";
@@ -393,6 +394,26 @@ export default function DriverDashboard() {
                 );
               })}
             </div>
+
+            {/* Fallback: call a premium mechanic directly while waiting */}
+            {activeRequest.status === "PENDING" && (
+              <Link
+                href="/mechanics"
+                className="block glass rounded-2xl p-4 border border-amber-500/20 hover:border-amber-500/40 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
+                    <Phone className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium flex items-center gap-1.5">
+                      <Shield className="w-3.5 h-3.5 text-amber-400" /> Taking too long?
+                    </p>
+                    <p className="text-xs text-white/50">Call a premium mechanic directly →</p>
+                  </div>
+                </div>
+              </Link>
+            )}
 
             {activeRequest.mechanic && (
                     <div className="glass rounded-2xl p-5 border border-white/8">

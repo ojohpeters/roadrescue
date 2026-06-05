@@ -23,6 +23,12 @@ export default function LandingPage() {
         </div>
         <div className="flex items-center gap-3">
           <Link
+            href="/mechanics"
+            className="hidden sm:inline px-4 py-2 text-sm text-white/70 hover:text-white transition-colors"
+          >
+            Find Mechanics
+          </Link>
+          <Link
             href="/login"
             className="px-4 py-2 text-sm text-white/70 hover:text-white transition-colors"
           >
@@ -74,6 +80,14 @@ export default function LandingPage() {
               Mechanic Login
             </Link>
           </div>
+
+          {/* No-account emergency path */}
+          <Link
+            href="/mechanics"
+            className="inline-flex items-center gap-1.5 mt-5 text-sm text-amber-400 hover:text-amber-300 transition-colors"
+          >
+            <Shield className="w-4 h-4" /> Or call a premium mechanic directly — no sign-up
+          </Link>
 
           {/* Trust signals */}
           <div className="flex flex-wrap justify-center gap-6 mt-12 text-sm text-white/40">

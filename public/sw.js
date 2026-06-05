@@ -1,9 +1,10 @@
 const CACHE = "road-rescue-v1";
-const STATIC_CACHE = "road-rescue-static-v1";
+const STATIC_CACHE = "road-rescue-static-v2";
 const MECHANIC_CACHE = "road-rescue-mechanics-v1";
 
 const STATIC_ASSETS = [
   "/",
+  "/mechanics",
   "/offline",
   "/manifest.json",
 ];
