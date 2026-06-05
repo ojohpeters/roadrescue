@@ -12,7 +12,7 @@ interface UserRow {
   id: string;
   name: string | null;
   email: string;
-  role: string;
+  role: string;                              
   phone: string | null;
   isAvailable: boolean;
   createdAt: string;

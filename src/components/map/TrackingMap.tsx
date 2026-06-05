@@ -47,6 +47,11 @@ export default function TrackingMap({ request, mechanicLat, mechanicLng }: Track
 
       if (leafletMapRef.current) return;
 
+      // No GPS coordinates (driver chose to provide directions) — skip the map
+      if (request.latitude == null || request.longitude == null) return;
+      const driverLat = request.latitude;
+      const driverLng = request.longitude;
+
       const driverIcon = L.divIcon({
         html: `<div class="w-8 h-8 rounded-full bg-orange-500 border-2 border-white flex items-center justify-center shadow-lg">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2Z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
@@ -65,7 +70,7 @@ export default function TrackingMap({ request, mechanicLat, mechanicLng }: Track
         iconAnchor: [16, 16],
       });
 
-      const center: [number, number] = [request.latitude, request.longitude];
+      const center: [number, number] = [driverLat, driverLng];
       const map = L.map(mapRef.current!, { center, zoom: 14 });
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -84,7 +89,7 @@ export default function TrackingMap({ request, mechanicLat, mechanicLng }: Track
           .bindPopup(`<b>${request.mechanic?.name ?? "Mechanic"}</b><br/>Mechanic location`)
           .addTo(map);
 
-        const dist = haversineDistance(request.latitude, request.longitude, mechanicLat, mechanicLng);
+        const dist = haversineDistance(driverLat, driverLng, mechanicLat, mechanicLng);
         setDistance(dist);
 
         const bounds = L.latLngBounds([center, [mechanicLat, mechanicLng]]);
@@ -106,6 +111,9 @@ export default function TrackingMap({ request, mechanicLat, mechanicLng }: Track
   // Update mechanic marker on prop change
   useEffect(() => {
     if (!leafletMapRef.current || mechanicLat === undefined || mechanicLng === undefined) return;
+    if (request.latitude == null || request.longitude == null) return;
+    const driverLat = request.latitude;
+    const driverLng = request.longitude;
     (async () => {
       const L = (await import("leaflet")).default;
       if (mechanicMarkerRef.current) {
@@ -113,13 +121,28 @@ export default function TrackingMap({ request, mechanicLat, mechanicLng }: Track
       } else {
         mechanicMarkerRef.current = L.marker([mechanicLat, mechanicLng]).addTo(leafletMapRef.current!);
       }
-      const dist = haversineDistance(request.latitude, request.longitude, mechanicLat, mechanicLng);
+      const dist = haversineDistance(driverLat, driverLng, mechanicLat, mechanicLng);
       setDistance(dist);
     })();
   }, [mechanicLat, mechanicLng]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!mounted) {
     return <div className="w-full h-72 rounded-xl bg-white/5 border border-white/10 animate-pulse" />;
+  }
+
+  // No GPS pin — the driver is guiding the mechanic with directions
+  if (request.latitude == null || request.longitude == null) {
+    return (
+      <div className="w-full rounded-xl bg-amber-500/5 border border-amber-500/20 p-5">
+        <div className="flex items-center gap-2 text-amber-400 text-sm font-medium mb-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+          Driver will provide directions
+        </div>
+        <p className="text-sm text-white/70">
+          {request.locationDescription || request.address || "No precise location pin — contact the driver to be guided in."}
+        </p>
+      </div>
+    );
   }
 
   return (

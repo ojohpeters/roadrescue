@@ -7,9 +7,11 @@ interface NearbyRequest {
   status: string;
   description: string;
   issueType: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   address: string | null;
+  locationDescription?: string | null;
+  willProvideDirections?: boolean;
   createdAt: string;
   driverId: string;
   mechanicId: string | null;
@@ -82,8 +84,10 @@ export default function PremiumMap({ requests, mechanicLat, mechanicLng, service
         dashArray: "6 4",
       }).addTo(map);
 
-      // Driver markers
-      requests.forEach((req) => {
+      // Driver markers (only those with GPS coordinates)
+      requests
+        .filter((req) => req.latitude != null && req.longitude != null)
+        .forEach((req) => {
         const icon = L.divIcon({
           html: `<div style="width:14px;height:14px;border-radius:50%;background:#ef4444;border:2px solid white;box-shadow:0 0 6px #ef444466;"></div>`,
           className: "",
@@ -92,7 +96,7 @@ export default function PremiumMap({ requests, mechanicLat, mechanicLng, service
         });
 
         const issueLabel = req.issueType.replace(/_/g, " ");
-        L.marker([req.latitude, req.longitude], { icon })
+        L.marker([req.latitude!, req.longitude!], { icon })
           .bindPopup(
             `<div style="font-size:13px;line-height:1.5;">
               <b>${req.driver.name ?? req.driver.email}</b><br/>

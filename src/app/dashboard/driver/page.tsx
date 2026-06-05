@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { MapPin, Loader2, AlertCircle, CheckCircle2, Car, ChevronRight, X, Shield } from "lucide-react";
+import { MapPin, Loader2, AlertCircle, CheckCircle2, Car, ChevronRight, X, Shield, Search } from "lucide-react";
 import dynamic from "next/dynamic";
 import type { RequestWithUsers } from "@/types";
 import { ISSUE_TYPES, STATUS_LABELS, STATUS_COLORS } from "@/types";
@@ -18,6 +18,11 @@ export default function DriverDashboard() {
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [address, setAddress] = useState("");
+  const [geoError, setGeoError] = useState("");
+  const [manualMode, setManualMode] = useState(false);
+  const [locDesc, setLocDesc] = useState("");
+  const [willProvideDirections, setWillProvideDirections] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
   const [form, setForm] = useState({ issueType: "", description: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -53,12 +58,33 @@ export default function DriverDashboard() {
   }, [activeRequest, fetchRequests]);
 
   const detectLocation = useCallback(() => {
-    if (!navigator.geolocation) { setGeoState("error"); return; }
+    setGeoError("");
+
+    // Geolocation requires a secure context (HTTPS), except on localhost
+    if (
+      typeof window !== "undefined" &&
+      !window.isSecureContext &&
+      window.location.hostname !== "localhost"
+    ) {
+      setGeoState("error");
+      setManualMode(true);
+      setGeoError(
+        "Location needs a secure (HTTPS) connection. Open the site over HTTPS, or enter your location manually below."
+      );
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      setGeoState("error");
+      setManualMode(true);
+      setGeoError("Your browser doesn't support location. Enter it manually below.");
+      return;
+    }
     setGeoState("detecting");
 
     function onSuccess(pos: GeolocationPosition) {
       const { latitude, longitude } = pos.coords;
-      setLat(latitude); setLng(longitude); setGeoState("found");
+      setLat(latitude); setLng(longitude); setGeoState("found"); setGeoError("");
       fetch(
         `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
       )
@@ -67,30 +93,96 @@ export default function DriverDashboard() {
         .catch(() => {});
     }
 
-    function onError() {
-      // Fallback: high accuracy may fail indoors/slow GPS, retry without it
-      navigator.geolocation.getCurrentPosition(onSuccess, () => setGeoState("error"), {
-        timeout: 15000,
+    function fail(err?: GeolocationPositionError) {
+      setGeoState("error");
+      setManualMode(true);
+      if (err?.code === err?.PERMISSION_DENIED) {
+        setGeoError(
+          "Location permission was denied. Allow location access in your browser settings, tap the map to pin your spot, or enter your location manually below."
+        );
+      } else if (err?.code === err?.TIMEOUT) {
+        setGeoError(
+          "Location timed out. Check your GPS/Wi-Fi, tap the map to pin your spot, or enter your location manually below."
+        );
+      } else {
+        setGeoError(
+          "Couldn't determine your location. Tap the map to pin your spot, or enter your location manually below."
+        );
+      }
+    }
+
+    function onError(err: GeolocationPositionError) {
+      // A denied permission won't be fixed by retrying — surface it immediately
+      if (err.code === err.PERMISSION_DENIED) { fail(err); return; }
+      // High accuracy can fail indoors / on slow GPS — retry once relaxed
+      navigator.geolocation.getCurrentPosition(onSuccess, fail, {
+        timeout: 20000,
         enableHighAccuracy: false,
+        maximumAge: 60000,
       });
     }
 
     navigator.geolocation.getCurrentPosition(onSuccess, onError, {
-      timeout: 10000,
+      timeout: 12000,
       enableHighAccuracy: true,
+      maximumAge: 0,
     });
   }, []);
 
+  // Manual fallback: turn a typed address/landmark into map coordinates
+  const geocodeAddress = useCallback(async () => {
+    const q = locDesc.trim();
+    if (!q) return;
+    setGeocoding(true);
+    setGeoError("");
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`
+      );
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        setLat(parseFloat(data[0].lat));
+        setLng(parseFloat(data[0].lon));
+        setGeoState("found");
+        if (data[0].display_name) setAddress(data[0].display_name);
+      } else {
+        setGeoError(
+          "Couldn't find that address on the map. You can still submit with “I'll provide directions” enabled."
+        );
+      }
+    } catch {
+      setGeoError(
+        "Address lookup failed. You can still submit with “I'll provide directions” enabled."
+      );
+    } finally {
+      setGeocoding(false);
+    }
+  }, [locDesc]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!lat || !lng) { setError("Please set your location first."); return; }
     if (!form.issueType) { setError("Please select an issue type."); return; }
+    const hasCoords = lat != null && lng != null;
+    const hasManual = willProvideDirections && locDesc.trim().length > 0;
+    if (!hasCoords && !hasManual) {
+      setError(
+        "Set your location on the map, or describe it and tick “I'll provide directions”."
+      );
+      return;
+    }
     setError(""); setSubmitting(true);
     try {
       const res = await fetch("/api/requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, latitude: lat, longitude: lng, address }),
+        body: JSON.stringify({
+          ...form,
+          latitude: hasCoords ? lat : null,
+          longitude: hasCoords ? lng : null,
+          address,
+          locationDescription: locDesc.trim() || undefined,
+          willProvideDirections,
+        }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "Failed to submit"); return; }
@@ -153,21 +245,78 @@ export default function DriverDashboard() {
                 </div>
               )}
               {geoState === "error" && (
-                <div className="space-y-2">
-                  <p className="flex items-center gap-2 text-red-400 text-sm"><AlertCircle className="w-4 h-4" /> Could not auto-detect. Tap the map to pin your location.</p>
-                  <button onClick={detectLocation} className="text-xs text-orange-400 underline">Try again</button>
+                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 mb-3 space-y-2">
+                  <p className="flex items-start gap-2 text-red-400 text-sm">
+                    <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    {geoError || "Could not auto-detect your location. Tap the map to pin it, or enter it manually below."}
+                  </p>
+                  <button onClick={detectLocation} className="inline-flex items-center gap-1.5 text-xs font-medium text-orange-400 hover:text-orange-300">
+                    <MapPin className="w-3.5 h-3.5" /> Retry detection
+                  </button>
                 </div>
               )}
               {(geoState === "found" || lat !== null) && (
                 <p className="flex items-center gap-2 text-green-400 text-sm mb-3">
-                  <CheckCircle2 className="w-4 h-4" />
-                  {address ? address.slice(0, 70) + "…" : `${lat?.toFixed(5)}, ${lng?.toFixed(5)}`}
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">{address ? address : `${lat?.toFixed(5)}, ${lng?.toFixed(5)}`}</span>
                 </p>
               )}
               <DriverMap
                 latitude={lat} longitude={lng}
                 onLocationSelect={(la, lo) => { setLat(la); setLng(lo); setGeoState("found"); }}
               />
+
+              {/* Manual location fallback */}
+              <div className="mt-3">
+                {!manualMode ? (
+                  <button
+                    type="button"
+                    onClick={() => setManualMode(true)}
+                    className="text-xs text-white/50 hover:text-white underline underline-offset-2"
+                  >
+                    Can&apos;t detect your location? Enter it manually
+                  </button>
+                ) : (
+                  <div className="space-y-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                    <div>
+                      <label className="block text-sm text-white/60 mb-1.5">Describe your location</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={locDesc}
+                          onChange={(e) => setLocDesc(e.target.value)}
+                          placeholder="e.g. Opposite Mobil station, Ikorodu Road"
+                          className="flex-1 px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-orange-500/50 text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={geocodeAddress}
+                          disabled={geocoding || !locDesc.trim()}
+                          className="px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-40 transition-colors flex items-center gap-1.5 text-xs text-white/70"
+                          title="Find this address on the map"
+                        >
+                          {geocoding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                          Find
+                        </button>
+                      </div>
+                      <p className="text-xs text-white/30 mt-1.5">Add a landmark, road name, or address to help the mechanic find you.</p>
+                    </div>
+
+                    <label className="flex items-start gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={willProvideDirections}
+                        onChange={(e) => setWillProvideDirections(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 accent-orange-500"
+                      />
+                      <span className="text-sm text-white/70">
+                        I&apos;ll provide directions to the mechanic
+                        <span className="block text-xs text-white/40">Submit without precise GPS — the mechanic will call you and you&apos;ll guide them in.</span>
+                      </span>
+                    </label>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="glass rounded-2xl p-5 border border-white/8">
@@ -203,7 +352,7 @@ export default function DriverDashboard() {
                     className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-orange-500/50 text-sm resize-none"
                   />
                 </div>
-                <button type="submit" disabled={submitting || !lat}
+                <button type="submit" disabled={submitting || (lat == null && !(willProvideDirections && locDesc.trim()))}
                   className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-base transition-colors flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
                 >
                   {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending Request...</> : <>Request Help Now <ChevronRight className="w-5 h-5" /></>}

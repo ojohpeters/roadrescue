@@ -17,9 +17,11 @@ interface NearbyRequest {
   status: string;
   description: string;
   issueType: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   address: string | null;
+  locationDescription?: string | null;
+  willProvideDirections?: boolean;
   createdAt: string;
   driverId: string;
   mechanicId: string | null;
@@ -231,9 +233,22 @@ export default function PremiumMechanicDashboard() {
                     <p className="text-sm text-white/60 mb-2 line-clamp-1">{req.description}</p>
 
                     {req.address && (
-                      <p className="text-xs text-white/40 flex items-start gap-1 mb-3">
+                      <p className="text-xs text-white/40 flex items-start gap-1 mb-2">
                         <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
                         {req.address.slice(0, 60)}
+                      </p>
+                    )}
+
+                    {req.locationDescription && (
+                      <p className="text-xs text-white/60 flex items-start gap-1 mb-2">
+                        <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0 text-amber-400" />
+                        {req.locationDescription}
+                      </p>
+                    )}
+
+                    {req.willProvideDirections && (
+                      <p className="text-[11px] text-amber-400 flex items-center gap-1 mb-3">
+                        <Navigation className="w-3 h-3" /> No GPS pin — call to get directions
                       </p>
                     )}
 

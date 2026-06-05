@@ -8,9 +8,11 @@ export interface RequestWithUsers {
   status: RequestStatus;
   description: string;
   issueType: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   address?: string | null;
+  locationDescription?: string | null;
+  willProvideDirections?: boolean;
   createdAt: string | Date;
   updatedAt: string | Date;
   acceptedAt?: string | Date | null;

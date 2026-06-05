@@ -148,9 +148,22 @@ export default function MechanicDashboard() {
                   <p className="text-sm text-white/60 mb-3 line-clamp-2">{job.description}</p>
 
                   {job.address && (
-                    <p className="text-xs text-white/40 flex items-start gap-1 mb-3">
+                    <p className="text-xs text-white/40 flex items-start gap-1 mb-2">
                       <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
                       {job.address.slice(0, 80)}
+                    </p>
+                  )}
+
+                  {job.locationDescription && (
+                    <p className="text-xs text-white/60 flex items-start gap-1 mb-2">
+                      <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0 text-amber-400" />
+                      {job.locationDescription}
+                    </p>
+                  )}
+
+                  {job.willProvideDirections && (
+                    <p className="text-[11px] text-amber-400 flex items-center gap-1 mb-3">
+                      <Navigation className="w-3 h-3" /> No GPS pin — driver will guide you in by phone
                     </p>
                   )}
 
@@ -212,6 +225,18 @@ export default function MechanicDashboard() {
               {activeJob.address && (
                 <p className="text-xs text-white/40 flex items-start gap-1">
                   <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" /> {activeJob.address}
+                </p>
+              )}
+
+              {activeJob.locationDescription && (
+                <p className="text-xs text-white/60 flex items-start gap-1 mt-2">
+                  <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0 text-amber-400" /> {activeJob.locationDescription}
+                </p>
+              )}
+
+              {activeJob.willProvideDirections && (
+                <p className="text-[11px] text-amber-400 flex items-center gap-1 mt-2">
+                  <Navigation className="w-3 h-3" /> No GPS pin — call the driver for directions
                 </p>
               )}
             </div>

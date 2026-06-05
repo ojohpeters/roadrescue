@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   const userId = session.user.id;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let filter: Record<string, any> = {};
+  const filter: Record<string, any> = {};
 
   if (role === "DRIVER") {
     filter.driverId = userId;
@@ -49,10 +49,31 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { description, issueType, latitude, longitude, address } = await request.json();
+    const {
+      description,
+      issueType,
+      latitude,
+      longitude,
+      address,
+      locationDescription,
+      willProvideDirections,
+    } = await request.json();
 
-    if (!description || !issueType || latitude == null || longitude == null) {
+    if (!description || !issueType) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const hasCoords = latitude != null && longitude != null;
+    const hasManualLocation =
+      !!willProvideDirections && !!locationDescription?.trim();
+
+    // A request needs either GPS coordinates or a manual location description
+    // (when the driver opts to guide the mechanic with directions).
+    if (!hasCoords && !hasManualLocation) {
+      return NextResponse.json(
+        { error: "Set your location on the map, or describe it and choose to provide directions." },
+        { status: 400 }
+      );
     }
 
     await connectDB();
@@ -69,9 +90,11 @@ export async function POST(request: Request) {
     const doc = await RescueRequest.create({
       description,
       issueType,
-      latitude,
-      longitude,
+      latitude: hasCoords ? latitude : undefined,
+      longitude: hasCoords ? longitude : undefined,
       address: address ?? undefined,
+      locationDescription: locationDescription?.trim() || undefined,
+      willProvideDirections: !!willProvideDirections,
       driverId: session.user.id,
     });
 
@@ -101,9 +124,11 @@ function normalizeDoc(r: any) {
     status: r.status,
     description: r.description,
     issueType: r.issueType,
-    latitude: r.latitude,
-    longitude: r.longitude,
+    latitude: r.latitude ?? null,
+    longitude: r.longitude ?? null,
     address: r.address ?? null,
+    locationDescription: r.locationDescription ?? null,
+    willProvideDirections: r.willProvideDirections ?? false,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
     acceptedAt: r.acceptedAt ?? null,

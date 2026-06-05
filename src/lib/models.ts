@@ -60,9 +60,11 @@ export interface IRescueRequest extends Document {
   status: RequestStatus;
   description: string;
   issueType: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   address?: string;
+  locationDescription?: string;
+  willProvideDirections?: boolean;
   driverId: Types.ObjectId;
   mechanicId?: Types.ObjectId;
   acceptedAt?: Date;
@@ -80,9 +82,11 @@ const RescueRequestSchema = new Schema<IRescueRequest>(
     },
     description: { type: String, required: true },
     issueType: { type: String, required: true },
-    latitude: { type: Number, required: true },
-    longitude: { type: Number, required: true },
+    latitude: { type: Number },
+    longitude: { type: Number },
     address: { type: String },
+    locationDescription: { type: String },
+    willProvideDirections: { type: Boolean, default: false },
     driverId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     mechanicId: { type: Schema.Types.ObjectId, ref: "User" },
     acceptedAt: { type: Date },
@@ -148,9 +152,11 @@ export interface PopulatedRequest {
   status: RequestStatus;
   description: string;
   issueType: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   address?: string;
+  locationDescription?: string;
+  willProvideDirections?: boolean;
   driverId: Types.ObjectId;
   mechanicId?: Types.ObjectId;
   acceptedAt?: Date;

@@ -30,12 +30,15 @@ export default function AdminMap({ requests }: AdminMapProps) {
       const L = (await import("leaflet")).default;
       await import("leaflet/dist/leaflet.css");
 
+      // Only requests with GPS coordinates can be plotted
+      const mapped = requests.filter((r) => r.latitude != null && r.longitude != null);
+
       if (leafletMapRef.current) {
         // Clear and re-add markers
         markersRef.current.forEach((m) => m.remove());
         markersRef.current = [];
 
-        requests.forEach((req) => {
+        mapped.forEach((req) => {
           const color = STATUS_COLORS[req.status] ?? "#fff";
           const icon = L.divIcon({
             html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 0 6px ${color}66;"></div>`,
@@ -43,7 +46,7 @@ export default function AdminMap({ requests }: AdminMapProps) {
             iconSize: [14, 14],
             iconAnchor: [7, 7],
           });
-          const m = L.marker([req.latitude, req.longitude], { icon })
+          const m = L.marker([req.latitude!, req.longitude!], { icon })
             .bindPopup(
               `<div style="font-size:13px;line-height:1.5;">
                 <b>${req.driver.name ?? req.driver.email}</b><br/>
@@ -57,8 +60,8 @@ export default function AdminMap({ requests }: AdminMapProps) {
         return;
       }
 
-      const center: [number, number] = requests.length > 0
-        ? [requests[0].latitude, requests[0].longitude]
+      const center: [number, number] = mapped.length > 0
+        ? [mapped[0].latitude!, mapped[0].longitude!]
         : [6.5244, 3.3792];
 
       const map = L.map(mapRef.current!, { center, zoom: 12 });
@@ -68,7 +71,7 @@ export default function AdminMap({ requests }: AdminMapProps) {
       }).addTo(map);
       setTimeout(() => map.invalidateSize(), 100);
 
-      requests.forEach((req) => {
+      mapped.forEach((req) => {
         const color = STATUS_COLORS[req.status] ?? "#fff";
         const icon = L.divIcon({
           html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 0 6px ${color}66;"></div>`,
@@ -76,7 +79,7 @@ export default function AdminMap({ requests }: AdminMapProps) {
           iconSize: [14, 14],
           iconAnchor: [7, 7],
         });
-        const m = L.marker([req.latitude, req.longitude], { icon })
+        const m = L.marker([req.latitude!, req.longitude!], { icon })
           .bindPopup(
             `<div style="font-size:13px;line-height:1.5;">
               <b>${req.driver.name ?? req.driver.email}</b><br/>
